@@ -4,13 +4,13 @@ export interface TimeRange {
 }
 
 export interface Schedule {
-  days: number[] | null;      // [1,2,3,4,5] for Mon-Fri, null = all days
-  timeRange: TimeRange | null; // null = all day
+  days: number[] | null;          // [1,2,3,4,5] for Mon-Fri, null = all days
+  timeRanges: TimeRange[] | null; // CHANGED: array of time ranges, null = all day
 }
 
 export interface ParsedEntry {
-  path: string;              // "example.com"
-  schedule: Schedule | null; // null = 24/7 blocking
+  path: string;                  // "example.com"
+  schedules: Schedule[] | null;  // CHANGED: array of schedules, null = 24/7 blocking
 }
 
 const DAY_NAMES: Record<string, number> = {
@@ -92,12 +92,14 @@ export const parseDayRange = (dayStr: string): number[] | null => {
 };
 
 /**
- * Parses a site entry with optional time interval and day range
+ * Parses a site entry with optional time intervals and day ranges.
+ * Supports multiple time ranges and multiple schedules with different days.
+ *
  * Examples:
- *   - "example.com" → { path: "example.com", schedule: null }
- *   - "example.com 9:00-17:00" → { path: "example.com", schedule: { days: null, timeRange: {...} } }
- *   - "facebook.com Mon-Fri 9:00-17:00" → { path: "facebook.com", schedule: { days: [1,2,3,4,5], timeRange: {...} } }
- *   - "youtube.com Sat-Sun" → { path: "youtube.com", schedule: { days: [0,6], timeRange: null } }
+ *   - "example.com" → { path: "example.com", schedules: null }
+ *   - "example.com 9:00-12:00 14:00-17:00" → Single schedule with multiple time ranges
+ *   - "example.com Mon-Fri 9:00-17:00" → Single schedule with days and time
+ *   - "example.com Mon-Fri 9:00-12:00 14:00-17:00 Sat 10:00-14:00" → Multiple schedules
  */
 export const parseEntry = (entry: string): ParsedEntry => {
   // Strip comments (everything after #)
@@ -107,7 +109,7 @@ export const parseEntry = (entry: string): ParsedEntry => {
   const parts = cleanEntry.split(/\s+/).filter(Boolean);
 
   if (parts.length === 0) {
-    return { path: "", schedule: null };
+    return { path: "", schedules: null };
   }
 
   // First part is always the path
@@ -115,46 +117,65 @@ export const parseEntry = (entry: string): ParsedEntry => {
 
   // If only one part, no schedule
   if (parts.length === 1) {
-    return { path, schedule: null };
+    return { path, schedules: null };
   }
 
-  // Try to parse remaining parts for days and time
-  let days: number[] | null = null;
-  let timeRange: TimeRange | null = null;
+  // State machine for parsing schedules
+  const schedules: Schedule[] = [];
+  let currentDays: number[] | null = null;
+  let currentTimeRanges: TimeRange[] = [];
+  let hasScheduleContent = false;  // Track if we've seen any days or times
 
   for (let i = 1; i < parts.length; i++) {
     const part = parts[i];
 
-    // Try to parse as time range
-    if (!timeRange) {
-      const parsedTime = parseTimeRange(part);
-      if (parsedTime) {
-        timeRange = parsedTime;
-        continue;
-      }
-    }
-
     // Try to parse as day range
-    if (!days) {
-      const parsedDays = parseDayRange(part);
-      if (parsedDays) {
-        days = parsedDays;
-        continue;
+    const parsedDays = parseDayRange(part);
+    if (parsedDays !== null) {
+      // Lookahead: check if next token is a time range
+      const nextPart = i + 1 < parts.length ? parts[i + 1] : null;
+      const nextIsTime = nextPart !== null && parseTimeRange(nextPart) !== null;
+
+      // Save current schedule if:
+      // 1. We already have days (second day pattern), OR
+      // 2. We have time ranges AND next token is a time (separate schedules)
+      if (currentDays !== null || (currentTimeRanges.length > 0 && nextIsTime)) {
+        schedules.push({
+          days: currentDays,
+          timeRanges: currentTimeRanges.length > 0 ? currentTimeRanges : null,
+        });
+        currentTimeRanges = [];
       }
+
+      // Set days for new schedule
+      currentDays = parsedDays;
+      hasScheduleContent = true;
+      continue;
     }
+
+    // Try to parse as time range
+    const parsedTime = parseTimeRange(part);
+    if (parsedTime !== null) {
+      currentTimeRanges.push(parsedTime);
+      hasScheduleContent = true;
+      continue;
+    }
+
+    // Invalid token, ignore
   }
 
-  // If we found either days or time, create a schedule
-  if (days || timeRange) {
-    return {
-      path,
-      schedule: {
-        days,
-        timeRange,
-      },
-    };
+  // Save final schedule if it has content
+  if (currentTimeRanges.length > 0 || (currentDays !== null && hasScheduleContent)) {
+    schedules.push({
+      days: currentDays,
+      timeRanges: currentTimeRanges.length > 0 ? currentTimeRanges : null,
+    });
   }
 
-  // No valid schedule found, fall back to 24/7
-  return { path, schedule: null };
+  // Return result
+  if (schedules.length === 0) {
+    return { path, schedules: null };  // 24/7 blocking
+  }
+
+  return { path, schedules };
 };

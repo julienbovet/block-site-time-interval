@@ -92,134 +92,227 @@ describe("parseEntry", () => {
   test("entries without time intervals", () => {
     expect(parseEntry("example.com")).toEqual({
       path: "example.com",
-      schedule: null,
+      schedules: null,
     });
 
     expect(parseEntry("*.youtube.com")).toEqual({
       path: "*.youtube.com",
-      schedule: null,
+      schedules: null,
     });
   });
 
   test("entries with time only", () => {
     expect(parseEntry("example.com 9:00-17:00")).toEqual({
       path: "example.com",
-      schedule: {
+      schedules: [{
         days: null,
-        timeRange: { start: "9:00", end: "17:00" },
-      },
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      }],
     });
 
     expect(parseEntry("facebook.com 08:30-18:45")).toEqual({
       path: "facebook.com",
-      schedule: {
+      schedules: [{
         days: null,
-        timeRange: { start: "08:30", end: "18:45" },
-      },
+        timeRanges: [{ start: "08:30", end: "18:45" }],
+      }],
     });
   });
 
   test("entries with days only", () => {
     expect(parseEntry("youtube.com Sat-Sun")).toEqual({
       path: "youtube.com",
-      schedule: {
+      schedules: [{
         days: [6, 0],
-        timeRange: null,
-      },
+        timeRanges: null,
+      }],
     });
 
     expect(parseEntry("example.com Mon")).toEqual({
       path: "example.com",
-      schedule: {
+      schedules: [{
         days: [1],
-        timeRange: null,
-      },
+        timeRanges: null,
+      }],
     });
   });
 
   test("entries with both days and time", () => {
     expect(parseEntry("facebook.com Mon-Fri 9:00-17:00")).toEqual({
       path: "facebook.com",
-      schedule: {
+      schedules: [{
         days: [1, 2, 3, 4, 5],
-        timeRange: { start: "9:00", end: "17:00" },
-      },
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      }],
     });
 
     expect(parseEntry("example.com Sat-Sun 10:00-22:00")).toEqual({
       path: "example.com",
-      schedule: {
+      schedules: [{
         days: [6, 0],
-        timeRange: { start: "10:00", end: "22:00" },
-      },
+        timeRanges: [{ start: "10:00", end: "22:00" }],
+      }],
     });
 
     // Order shouldn't matter
     expect(parseEntry("example.com 9:00-17:00 Mon-Fri")).toEqual({
       path: "example.com",
-      schedule: {
+      schedules: [{
         days: [1, 2, 3, 4, 5],
-        timeRange: { start: "9:00", end: "17:00" },
-      },
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      }],
     });
   });
 
   test("entries with comments", () => {
     expect(parseEntry("example.com 9:00-17:00 # work hours")).toEqual({
       path: "example.com",
-      schedule: {
+      schedules: [{
         days: null,
-        timeRange: { start: "9:00", end: "17:00" },
-      },
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      }],
     });
 
     expect(parseEntry("facebook.com # blocked all day")).toEqual({
       path: "facebook.com",
-      schedule: null,
+      schedules: null,
     });
   });
 
   test("entries with wildcards and time", () => {
     expect(parseEntry("*.social.com Mon-Fri 9:00-17:00")).toEqual({
       path: "*.social.com",
-      schedule: {
+      schedules: [{
         days: [1, 2, 3, 4, 5],
-        timeRange: { start: "9:00", end: "17:00" },
-      },
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      }],
     });
   });
 
   test("entries with invalid time fall back to 24/7", () => {
     expect(parseEntry("example.com 25:00-26:00")).toEqual({
       path: "example.com",
-      schedule: null,
+      schedules: null,
     });
 
     expect(parseEntry("example.com invalid")).toEqual({
       path: "example.com",
-      schedule: null,
+      schedules: null,
     });
   });
 
   test("empty entries", () => {
     expect(parseEntry("")).toEqual({
       path: "",
-      schedule: null,
+      schedules: null,
     });
 
     expect(parseEntry("   ")).toEqual({
       path: "",
-      schedule: null,
+      schedules: null,
     });
   });
 
   test("extra whitespace", () => {
     expect(parseEntry("  example.com  9:00-17:00  ")).toEqual({
       path: "example.com",
-      schedule: {
+      schedules: [{
         days: null,
-        timeRange: { start: "9:00", end: "17:00" },
-      },
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      }],
+    });
+  });
+
+  test("multiple time ranges without days", () => {
+    expect(parseEntry("example.com 9:00-12:00 14:00-17:00")).toEqual({
+      path: "example.com",
+      schedules: [{
+        days: null,
+        timeRanges: [
+          { start: "9:00", end: "12:00" },
+          { start: "14:00", end: "17:00" },
+        ],
+      }],
+    });
+  });
+
+  test("multiple time ranges with days", () => {
+    expect(parseEntry("facebook.com Mon-Fri 9:00-12:00 14:00-17:00")).toEqual({
+      path: "facebook.com",
+      schedules: [{
+        days: [1, 2, 3, 4, 5],
+        timeRanges: [
+          { start: "9:00", end: "12:00" },
+          { start: "14:00", end: "17:00" },
+        ],
+      }],
+    });
+  });
+
+  test("multiple schedules with different days", () => {
+    expect(parseEntry("example.com Mon-Fri 9:00-17:00 Sat 10:00-14:00")).toEqual({
+      path: "example.com",
+      schedules: [
+        {
+          days: [1, 2, 3, 4, 5],
+          timeRanges: [{ start: "9:00", end: "17:00" }],
+        },
+        {
+          days: [6],
+          timeRanges: [{ start: "10:00", end: "14:00" }],
+        },
+      ],
+    });
+  });
+
+  test("complex: multiple schedules with multiple times", () => {
+    expect(parseEntry("reddit.com Mon-Fri 9:00-12:00 14:00-18:00 Sat 10:00-12:00")).toEqual({
+      path: "reddit.com",
+      schedules: [
+        {
+          days: [1, 2, 3, 4, 5],
+          timeRanges: [
+            { start: "9:00", end: "12:00" },
+            { start: "14:00", end: "18:00" },
+          ],
+        },
+        {
+          days: [6],
+          timeRanges: [{ start: "10:00", end: "12:00" }],
+        },
+      ],
+    });
+  });
+
+  test("multiple day patterns without times", () => {
+    expect(parseEntry("example.com Mon-Fri Sat-Sun")).toEqual({
+      path: "example.com",
+      schedules: [
+        {
+          days: [1, 2, 3, 4, 5],
+          timeRanges: null,
+        },
+        {
+          days: [6, 0],
+          timeRanges: null,
+        },
+      ],
+    });
+  });
+
+  test("time before day pattern creates separate schedules", () => {
+    expect(parseEntry("example.com 9:00-12:00 Mon-Fri 14:00-17:00")).toEqual({
+      path: "example.com",
+      schedules: [
+        {
+          days: null,
+          timeRanges: [{ start: "9:00", end: "12:00" }],
+        },
+        {
+          days: [1, 2, 3, 4, 5],
+          timeRanges: [{ start: "14:00", end: "17:00" }],
+        },
+      ],
     });
   });
 });

@@ -25,8 +25,8 @@ export default (options: BlockSiteOptions) => {
     return;
   }
 
-  // Check if current time is within the blocking schedule
-  if (!isWithinSchedule(foundRule.schedule)) {
+  // Check if current time is within the blocking schedules
+  if (!isWithinSchedule(foundRule.schedules)) {
     // Outside schedule - don't block
     return;
   }

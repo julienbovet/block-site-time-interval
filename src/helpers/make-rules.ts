@@ -6,7 +6,7 @@ type RuleType = "allow" | "block"
 export interface Rule {
   type: RuleType
   path: string
-  schedule: Schedule | null
+  schedules: Schedule[] | null
 }
 
 export default (blocked: string[]): Rule[] => {
@@ -14,8 +14,8 @@ export default (blocked: string[]): Rule[] => {
     // Strip comments
     const cleanItem = item.split("#")[0].trim();
 
-    // Parse path and schedule
-    const { path, schedule } = parseEntry(cleanItem);
+    // Parse path and schedules
+    const { path, schedules } = parseEntry(cleanItem);
 
     // Remove protocol from path
     const cleanPath = removeProtocol(path);
@@ -23,7 +23,7 @@ export default (blocked: string[]): Rule[] => {
     return {
       type: isAllow ? "allow" : "block",
       path: cleanPath,
-      schedule,
+      schedules,
     };
   };
 
