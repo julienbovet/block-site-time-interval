@@ -41,26 +41,38 @@ export const isDayInRange = (now: Date, days: number[] | null): boolean => {
 };
 
 /**
- * Checks if the current time matches the schedule
- * null schedule means 24/7 (always matches)
- * null timeRange means all day
- * null days means all days
+ * Checks if the current time matches a single schedule
+ * Handles multiple time ranges within the schedule (OR logic)
  */
-export const isWithinSchedule = (schedule: Schedule | null, now: Date = new Date()): boolean => {
-  // No schedule means 24/7 blocking
-  if (schedule === null) {
-    return true;
-  }
-
+export const isWithinSingleSchedule = (schedule: Schedule, now: Date): boolean => {
   // Check day
   if (!isDayInRange(now, schedule.days)) {
     return false;
   }
 
-  // Check time
-  if (schedule.timeRange === null) {
+  // Check time ranges
+  if (schedule.timeRanges === null) {
     return true; // All day
   }
 
-  return isTimeInRange(now, schedule.timeRange);
+  // Check if ANY time range matches (OR logic)
+  return schedule.timeRanges.some(timeRange => isTimeInRange(now, timeRange));
 };
+
+/**
+ * Checks if the current time matches any of the schedules
+ * null schedules means 24/7 (always matches)
+ * Renamed from isWithinSchedule to isWithinAnySchedule
+ */
+export const isWithinAnySchedule = (schedules: Schedule[] | null, now: Date = new Date()): boolean => {
+  // No schedules means 24/7 blocking
+  if (schedules === null) {
+    return true;
+  }
+
+  // Check if ANY schedule matches (OR logic)
+  return schedules.some(schedule => isWithinSingleSchedule(schedule, now));
+};
+
+// Backward compatibility: keep old name as alias
+export const isWithinSchedule = isWithinAnySchedule;

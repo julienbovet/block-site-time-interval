@@ -155,100 +155,195 @@ describe("isWithinSchedule", () => {
   test("time only schedule", () => {
     const schedule: Schedule = {
       days: null,
-      timeRange: { start: "9:00", end: "17:00" },
+      timeRanges: [{ start: "9:00", end: "17:00" }],
     };
 
     // Within time range
     const noon = new Date("2024-01-15T12:00:00");
-    expect(isWithinSchedule(schedule, noon)).toBe(true);
+    expect(isWithinSchedule([schedule], noon)).toBe(true);
 
     // Outside time range
     const evening = new Date("2024-01-15T20:00:00");
-    expect(isWithinSchedule(schedule, evening)).toBe(false);
+    expect(isWithinSchedule([schedule], evening)).toBe(false);
   });
 
   test("days only schedule", () => {
     const schedule: Schedule = {
       days: [1, 2, 3, 4, 5], // Mon-Fri
-      timeRange: null,
+      timeRanges: null,
     };
 
     // Weekday
     const monday = new Date("2024-01-15T12:00:00");
-    expect(isWithinSchedule(schedule, monday)).toBe(true);
+    expect(isWithinSchedule([schedule], monday)).toBe(true);
 
     // Weekend
     const saturday = new Date("2024-01-20T12:00:00");
-    expect(isWithinSchedule(schedule, saturday)).toBe(false);
+    expect(isWithinSchedule([schedule], saturday)).toBe(false);
   });
 
   test("days and time schedule", () => {
     const schedule: Schedule = {
       days: [1, 2, 3, 4, 5], // Mon-Fri
-      timeRange: { start: "9:00", end: "17:00" },
+      timeRanges: [{ start: "9:00", end: "17:00" }],
     };
 
     // Monday noon - within schedule
     const mondayNoon = new Date("2024-01-15T12:00:00");
-    expect(isWithinSchedule(schedule, mondayNoon)).toBe(true);
+    expect(isWithinSchedule([schedule], mondayNoon)).toBe(true);
 
     // Monday evening - correct day but wrong time
     const mondayEvening = new Date("2024-01-15T20:00:00");
-    expect(isWithinSchedule(schedule, mondayEvening)).toBe(false);
+    expect(isWithinSchedule([schedule], mondayEvening)).toBe(false);
 
     // Saturday noon - correct time but wrong day
     const saturdayNoon = new Date("2024-01-20T12:00:00");
-    expect(isWithinSchedule(schedule, saturdayNoon)).toBe(false);
+    expect(isWithinSchedule([schedule], saturdayNoon)).toBe(false);
 
     // Saturday evening - wrong day and wrong time
     const saturdayEvening = new Date("2024-01-20T20:00:00");
-    expect(isWithinSchedule(schedule, saturdayEvening)).toBe(false);
+    expect(isWithinSchedule([schedule], saturdayEvening)).toBe(false);
   });
 
   test("weekend all day", () => {
     const schedule: Schedule = {
       days: [6, 0], // Sat-Sun
-      timeRange: null,
+      timeRanges: null,
     };
 
     // Saturday at any time - within schedule
     const saturdayMorning = new Date("2024-01-20T06:00:00");
-    expect(isWithinSchedule(schedule, saturdayMorning)).toBe(true);
+    expect(isWithinSchedule([schedule], saturdayMorning)).toBe(true);
 
     const saturdayNight = new Date("2024-01-20T23:00:00");
-    expect(isWithinSchedule(schedule, saturdayNight)).toBe(true);
+    expect(isWithinSchedule([schedule], saturdayNight)).toBe(true);
 
     // Monday - outside schedule
     const monday = new Date("2024-01-15T12:00:00");
-    expect(isWithinSchedule(schedule, monday)).toBe(false);
+    expect(isWithinSchedule([schedule], monday)).toBe(false);
   });
 
   test("overnight schedule", () => {
     const schedule: Schedule = {
       days: null,
-      timeRange: { start: "22:00", end: "6:00" },
+      timeRanges: [{ start: "22:00", end: "6:00" }],
     };
 
     // 23:00 - within schedule
     const lateNight = new Date("2024-01-15T23:00:00");
-    expect(isWithinSchedule(schedule, lateNight)).toBe(true);
+    expect(isWithinSchedule([schedule], lateNight)).toBe(true);
 
     // 3:00 - within schedule
     const earlyMorning = new Date("2024-01-15T03:00:00");
-    expect(isWithinSchedule(schedule, earlyMorning)).toBe(true);
+    expect(isWithinSchedule([schedule], earlyMorning)).toBe(true);
 
     // 12:00 - outside schedule
     const noon = new Date("2024-01-15T12:00:00");
-    expect(isWithinSchedule(schedule, noon)).toBe(false);
+    expect(isWithinSchedule([schedule], noon)).toBe(false);
   });
 
   test("uses current time when not provided", () => {
     const schedule: Schedule = {
       days: null,
-      timeRange: null,
+      timeRanges: null,
     };
 
-    // Should not throw and should return true for null timeRange
-    expect(isWithinSchedule(schedule)).toBe(true);
+    // Should not throw and should return true for null timeRanges
+    expect(isWithinSchedule([schedule])).toBe(true);
+  });
+
+  test("multiple time ranges - lunch break scenario", () => {
+    const schedules: Schedule[] = [{
+      days: null,
+      timeRanges: [
+        { start: "9:00", end: "12:00" },
+        { start: "14:00", end: "17:00" },
+      ],
+    }];
+
+    // 11:00 - within first time range
+    const morning = new Date("2024-01-15T11:00:00");
+    expect(isWithinSchedule(schedules, morning)).toBe(true);
+
+    // 13:00 - lunch break, not blocked
+    const lunch = new Date("2024-01-15T13:00:00");
+    expect(isWithinSchedule(schedules, lunch)).toBe(false);
+
+    // 15:00 - within second time range
+    const afternoon = new Date("2024-01-15T15:00:00");
+    expect(isWithinSchedule(schedules, afternoon)).toBe(true);
+
+    // 18:00 - after all time ranges
+    const evening = new Date("2024-01-15T18:00:00");
+    expect(isWithinSchedule(schedules, evening)).toBe(false);
+  });
+
+  test("multiple schedules with different days", () => {
+    const schedules: Schedule[] = [
+      {
+        days: [1, 2, 3, 4, 5], // Mon-Fri
+        timeRanges: [{ start: "9:00", end: "17:00" }],
+      },
+      {
+        days: [6], // Sat
+        timeRanges: [{ start: "10:00", end: "14:00" }],
+      },
+    ];
+
+    // Monday 12:00 - matches first schedule
+    const mondayNoon = new Date("2024-01-15T12:00:00");
+    expect(isWithinSchedule(schedules, mondayNoon)).toBe(true);
+
+    // Monday 20:00 - wrong time for first schedule, wrong day for second
+    const mondayEvening = new Date("2024-01-15T20:00:00");
+    expect(isWithinSchedule(schedules, mondayEvening)).toBe(false);
+
+    // Saturday 12:00 - wrong day for first, matches second schedule
+    const saturdayNoon = new Date("2024-01-20T12:00:00");
+    expect(isWithinSchedule(schedules, saturdayNoon)).toBe(true);
+
+    // Saturday 16:00 - wrong day for first, wrong time for second
+    const saturdayEvening = new Date("2024-01-20T16:00:00");
+    expect(isWithinSchedule(schedules, saturdayEvening)).toBe(false);
+
+    // Sunday 12:00 - not in any schedule
+    const sundayNoon = new Date("2024-01-21T12:00:00");
+    expect(isWithinSchedule(schedules, sundayNoon)).toBe(false);
+  });
+
+  test("complex: multiple schedules with multiple time ranges", () => {
+    const schedules: Schedule[] = [
+      {
+        days: [1, 2, 3, 4, 5], // Mon-Fri
+        timeRanges: [
+          { start: "9:00", end: "12:00" },
+          { start: "14:00", end: "18:00" },
+        ],
+      },
+      {
+        days: [6], // Sat
+        timeRanges: [{ start: "10:00", end: "12:00" }],
+      },
+    ];
+
+    // Monday 11:00 - first schedule, first time range
+    const mondayMorning = new Date("2024-01-15T11:00:00");
+    expect(isWithinSchedule(schedules, mondayMorning)).toBe(true);
+
+    // Monday 13:00 - first schedule lunch break
+    const mondayLunch = new Date("2024-01-15T13:00:00");
+    expect(isWithinSchedule(schedules, mondayLunch)).toBe(false);
+
+    // Monday 15:00 - first schedule, second time range
+    const mondayAfternoon = new Date("2024-01-15T15:00:00");
+    expect(isWithinSchedule(schedules, mondayAfternoon)).toBe(true);
+
+    // Saturday 11:00 - second schedule
+    const saturdayMorning = new Date("2024-01-20T11:00:00");
+    expect(isWithinSchedule(schedules, saturdayMorning)).toBe(true);
+
+    // Saturday 13:00 - outside second schedule time
+    const saturdayAfternoon = new Date("2024-01-20T13:00:00");
+    expect(isWithinSchedule(schedules, saturdayAfternoon)).toBe(false);
   });
 });

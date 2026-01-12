@@ -34,7 +34,7 @@ describe("findRule()", () => {
       ].forEach((url) => expect(findRule(url, ["example.com/"])).toEqual<Rule>({
         type: "block",
         path: "example.com/",
-        schedule: null,
+        schedules: null,
       }));
     });
   });
@@ -44,7 +44,7 @@ describe("findRule()", () => {
       expect(findRule("https://example.com/", ["example.com/"])).toEqual<Rule>({
         type: "block",
         path: "example.com/",
-        schedule: null,
+        schedules: null,
       });
 
       expect(findRule("https://dashboard.example.com/", ["example.com/"])).toBeUndefined();
@@ -54,7 +54,7 @@ describe("findRule()", () => {
       expect(findRule("https://dashboard.example.com/", ["dashboard.example.com/"])).toEqual<Rule>({
         type: "block",
         path: "dashboard.example.com/",
-        schedule: null,
+        schedules: null,
       });
 
       expect(findRule("https://example.com/", ["dashboard.example.com/"])).toBeUndefined();
@@ -68,7 +68,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, ["*.example.com/"])).toEqual<Rule>({
           type: "block",
           path: "*.example.com/",
-          schedule: null,
+          schedules: null,
         }));
 
         expect(findRule("https://example.com/", ["*.example.com/"])).toBeUndefined();
@@ -80,7 +80,7 @@ describe("findRule()", () => {
           expect(findRule("https://www.facebook.com/", [blocked])).toEqual<Rule>({
             type: "block",
             path: blocked,
-            schedule: null,
+            schedules: null,
           });
         });
 
@@ -100,7 +100,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, blocked)).toEqual<Rule>({
           type: "block",
           path: blocked[0],
-          schedule: null,
+          schedules: null,
         }));
 
         [
@@ -118,7 +118,7 @@ describe("findRule()", () => {
         expect(findRule("https://www.facebook.com/", [blocked])).toEqual<Rule>({
           type: "block",
           path: blocked,
-          schedule: null,
+          schedules: null,
         });
       });
     });
@@ -131,7 +131,7 @@ describe("findRule()", () => {
         expect(findRule(url, ["example.com"])).toEqual<Rule>({
           type: "block",
           path: "example.com",
-          schedule: null,
+          schedules: null,
         });
       });
 
@@ -142,7 +142,7 @@ describe("findRule()", () => {
         expect(findRule(url, ["dashboard.example.com"])).toEqual<Rule>({
           type: "block",
           path: "dashboard.example.com",
-          schedule: null,
+          schedules: null,
         });
       });
 
@@ -165,7 +165,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, ["example.com/*"])).toEqual<Rule>({
           type: "block",
           path: "example.com/*",
-          schedule: null,
+          schedules: null,
         }));
       });
 
@@ -176,7 +176,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, ["example.com/app*"])).toEqual<Rule>({
           type: "block",
           path: "example.com/app*",
-          schedule: null,
+          schedules: null,
         }));
 
         [
@@ -192,7 +192,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, ["example.com/*rry/"])).toEqual<Rule>({
           type: "block",
           path: "example.com/*rry/",
-          schedule: null,
+          schedules: null,
         }));
       });
 
@@ -200,7 +200,7 @@ describe("findRule()", () => {
         expect(findRule("https://www.youtube.com/watch?v=123456", ["*watch*"])).toEqual<Rule>({
           type: "block",
           path: "*watch*",
-          schedule: null,
+          schedules: null,
         });
 
         [
@@ -211,7 +211,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, ["*proxy*"])).toEqual<Rule>({
           type: "block",
           path: "*proxy*",
-          schedule: null,
+          schedules: null,
         }));
       });
     });
@@ -221,7 +221,7 @@ describe("findRule()", () => {
         expect(findRule("https://example.com/banana/", ["example.com/??nana/"])).toEqual<Rule>({
           type: "block",
           path: "example.com/??nana/",
-          schedule: null,
+          schedules: null,
         });
       });
     });
@@ -239,7 +239,7 @@ describe("findRule()", () => {
         ].forEach((url) => expect(findRule(url, blocked)).toEqual<Rule>({
           type: "block",
           path: blocked[0],
-          schedule: null,
+          schedules: null,
         }));
 
         [
@@ -263,13 +263,13 @@ describe("findRule()", () => {
       expect(findRule("https://banana.example.com/", blockedExcludedDomain)).toEqual<Rule>({
         type: "block",
         path: "*.example.com/",
-        schedule: null,
+        schedules: null,
       });
 
       expect(findRule("https://apple.example.com/", blockedExcludedDomain)).toEqual<Rule>({
         type: "allow",
         path: "apple.example.com/",
-        schedule: null,
+        schedules: null,
       });
     });
 
@@ -282,13 +282,13 @@ describe("findRule()", () => {
       expect(findRule("https://example.com/apple/", blockedExcludedPath)).toEqual<Rule>({
         type: "block",
         path: "example.com/*",
-        schedule: null,
+        schedules: null,
       });
 
       expect(findRule("https://example.com/strawberry/", blockedExcludedPath)).toEqual<Rule>({
         type: "allow",
         path: "example.com/strawberry/",
-        schedule: null,
+        schedules: null,
       });
     });
   });
